@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Yupnup vs Polymarket — Portfolio Simulator</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b22; --panel2:#1c232d; --line:#2a323d;
+    --ink:#e6edf3; --mut:#8b949e; --acc:#3fb950; --acc2:#58a6ff;
+    --warn:#f0883e; --bad:#f85149; --purp:#bc8cff; --chip:#21262d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;padding:24px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:23px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:20px;max-width:820px}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 14px;font-weight:600}
+  label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
+  input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:9px 10px;font-size:14px;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--acc2)}
+  select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 10px;font-size:13px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .rv{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}
+  .rv b{color:var(--acc2);font-variant-numeric:tabular-nums}
+  .fee-yup label{color:#f0a878} .fee-pm label{color:#8fc7ff}
+
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+  .tile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .tile .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .tile .v{font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+  .tile .s{font-size:11px;color:var(--mut);margin-top:2px}
+  .yup{color:var(--warn)} .pm{color:var(--acc2)} .good{color:var(--acc)} .bad{color:var(--bad)} .purp{color:var(--purp)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  th:first-child,td:first-child{text-align:left}
+  tbody tr:hover{background:var(--panel2)}
+  .grp{color:var(--warn);font-weight:700}
+  .grp.pm{color:var(--acc2)}
+  .foot{color:var(--mut);font-size:11px;margin-top:14px;line-height:1.6}
+  .warnbox{background:rgba(240,136,62,.08);border:1px solid rgba(240,136,62,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:#f0c090;margin-top:12px}
+  .pill{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--mut);margin:0 6px 6px 0}
+  .seg{display:flex;gap:6px;margin-top:6px}
+  .seg button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px;font-size:12px;cursor:pointer}
+  .seg button.on{background:var(--acc2);border-color:var(--acc2);color:#04121f;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Yupnup vs Polymarket — Portfolio Simulator</h1>
+  <div class="sub">Set a stake per trade and a number of trades, pick your odds and win rate, and compare P&amp;L under <b>flat staking</b> vs a <b>compounding bankroll</b> — side by side for Yupnup and for going direct on Polymarket. Volume = stake × trades. Yupnup's fees (1% taker, 10% profit, 2% withdrawal) plus its slippage — the 1% market move <b>and</b> extra execution-lag slippage that a direct Polymarket trade avoids — are all adjustable; Polymarket has no profit or withdrawal fee, only a category-based taker fee and the shared market slippage.</div>
+
+  <div class="grid">
+    <!-- CONTROLS -->
+    <div>
+      <div class="card">
+        <h2>Portfolio &amp; bet</h2>
+        <label>Stake per trade / portfolio ($)</label>
+        <input id="stake" type="number" value="100" step="10"/>
+        <label>Number of trades</label>
+        <input id="trades" type="range" min="1" max="100" step="1" value="10"/>
+        <div class="rv"><span>Trades <b id="tradesLbl">10</b></span><span>Total volume <b id="volLbl">$1,000</b></span></div>
+
+        <label>Entry odds (share price)</label>
+        <input id="price" type="range" min="0.05" max="0.95" step="0.01" value="0.50"/>
+        <div class="rv"><span>Price <b id="priceLbl">$0.50</b></span><span>Payout <b id="multLbl">×2.00</b></span></div>
+
+        <label>Win rate</label>
+        <input id="win" type="range" min="0" max="100" step="1" value="60"/>
+        <div class="rv"><span>Win rate <b id="winLbl">60%</b></span><span>Break-even <b id="beLbl">—</b></span></div>
+
+        <label>Compounding: fraction of bankroll staked each trade</label>
+        <input id="frac" type="range" min="10" max="100" step="5" value="100"/>
+        <div class="rv"><span>Fraction <b id="fracLbl">100%</b></span><span>&nbsp;</span></div>
+      </div>
+
+      <div class="card fee-yup">
+        <h2 style="color:var(--warn)">Yupnup fees</h2>
+        <div class="row2">
+          <div><label>Taker %</label><input id="yTaker" type="number" value="1" step="0.1"/></div>
+          <div><label>Market slip %</label><input id="ySlip" type="number" value="1" step="0.1"/></div>
+        </div>
+        <div class="row2">
+          <div><label>Lag slip % (Yupnup only)</label><input id="yLag" type="number" value="1" step="0.1"/></div>
+          <div><label>Profit fee %</label><input id="yPf" type="number" value="10" step="0.5"/></div>
+        </div>
+        <div class="row2">
+          <div><label>Withdrawal %</label><input id="yWd" type="number" value="2" step="0.1"/></div>
+          <div style="align-self:end"><div class="foot" style="margin:0">Effective slip = market + lag = <b id="yEffSlip" style="color:#f0a878">2.0%</b></div></div>
+        </div>
+      </div>
+
+      <div class="card fee-pm">
+        <h2 style="color:var(--acc2)">Polymarket fees</h2>
+        <label>Market category (sets taker fee)</label>
+        <select id="pmCat">
+          <option value="0">World / Geopolitical events — 0%</option>
+          <option value="0.75" selected>Sports — ~0.75% peak</option>
+          <option value="1.0">Politics / Finance / Tech — ~1.0%</option>
+          <option value="1.25">Economics / Culture / Weather — ~1.25%</option>
+          <option value="1.75">Crypto — ~1.75%</option>
+        </select>
+        <div class="row2" style="margin-top:6px">
+          <div><label>Taker % (effective)</label><input id="pTaker" type="number" value="0.75" step="0.05"/></div>
+          <div><label>Slippage %</label><input id="pSlip" type="number" value="1" step="0.1"/></div>
+        </div>
+        <div class="foot">No profit fee, no withdrawal fee (USDC withdrawals on Polygon are free apart from gas). Taker fee peaks near 50¢ and fades toward the extremes.</div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Yupnup — flat P&amp;L</div><div class="v yup" id="tYupFlat">—</div><div class="s" id="tYupFlatRoi"></div></div>
+        <div class="tile"><div class="k">Polymarket — flat P&amp;L</div><div class="v pm" id="tPmFlat">—</div><div class="s" id="tPmFlatRoi"></div></div>
+        <div class="tile"><div class="k">Yupnup fee drag vs Polymarket</div><div class="v purp" id="tDiff">—</div><div class="s">extra you pay on this run</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Flat staking — fixed <span id="stakeEcho">$100</span> every trade</h2>
+        <table>
+          <thead><tr><th>Metric</th><th>Yupnup</th><th>Polymarket</th><th>Difference</th></tr></thead>
+          <tbody id="flatBody"></tbody>
+        </table>
+        <div class="foot">Deterministic given the win rate: each trade risks the same amount, losses forfeit the full stake, the withdrawal fee applies once to the balance you cash out.</div>
+      </div>
+
+      <div class="card">
+        <h2>Compounding bankroll — start <span id="p0Echo">$100</span>, re-stake each trade</h2>
+        <table>
+          <thead><tr><th>Metric</th><th>Yupnup</th><th>Polymarket</th><th>Difference</th></tr></thead>
+          <tbody id="compBody"></tbody>
+        </table>
+        <div class="warnbox" id="compWarn">These are <b>expected (mean)</b> outcomes. With whole-bankroll bets, real sequences swing wildly and a single losing streak can wipe the bankroll to near zero — the mean is inflated by rare all-win paths. Lower the staking fraction to see a more survivable path.</div>
+      </div>
+
+      <div class="card">
+        <h2>Scenario table — P&amp;L by number of trades <span style="color:var(--mut);font-weight:400">(current odds, win rate &amp; fees)</span></h2>
+        <table>
+          <thead><tr>
+            <th>Trades</th><th>Volume</th>
+            <th class="grp">Flat · Yup</th><th class="grp pm">Flat · PM</th>
+            <th class="grp">Comp · Yup</th><th class="grp pm">Comp · PM</th>
+          </tr></thead>
+          <tbody id="scnBody"></tbody>
+        </table>
+        <div class="foot" id="engineFoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>{const s=n<0?'-$':'$';const a=Math.abs(n);
+  return s+(a>=1e6?(a/1e6).toLocaleString('en-US',{maximumFractionDigits:2})+'M':a.toLocaleString('en-US',{maximumFractionDigits:0}));};
+const money2=n=>(n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=n=>n.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+
+// expected net return multiple per $1 staked (loss -> 0)
+function perTradeR(p,w,taker,slip,pf){
+  const M=(1-taker)/(p*(1+slip));
+  const netwin=M-(pf*Math.max(M-1,0));
+  return w*netwin;
+}
+function flatPnl(V,p,w,f){ // f=[taker,slip,pf,wd]
+  const R=perTradeR(p,w,f[0],f[1],f[2]);
+  const net=V*R*(1-f[3]); return {pnl:net-V, roi:(net-V)/V*100, R};
+}
+function compPnl(P0,N,p,w,f,frac){
+  const R=perTradeR(p,w,f[0],f[1],f[2]);
+  const g=(1-frac)+frac*R;
+  const bal=P0*Math.pow(g,N);
+  const net=bal*(1-f[3]);
+  return {bal, pnl:net-P0, roi:(net-P0)/P0*100};
+}
+function breakeven(p,f){ // win rate where flat pnl=0
+  let lo=0,hi=1;
+  for(let i=0;i<60;i++){const m=(lo+hi)/2; if(flatPnl(1000,p,m,f).pnl<0)lo=m; else hi=m;}
+  return (lo+hi)/2*100;
+}
+
+function readFees(){
+  const ySlipEff=((+$('ySlip').value||0)+(+$('yLag').value||0))/100; // market + lag
+  const yup=[(+$('yTaker').value||0)/100,ySlipEff,(+$('yPf').value||0)/100,(+$('yWd').value||0)/100];
+  const pm =[(+$('pTaker').value||0)/100,(+$('pSlip').value||0)/100,0,0];
+  $('yEffSlip').textContent=pct(ySlipEff*100);
+  return {yup,pm};
+}
+function diffCell(a,b){ const d=a-b; return `<span class="${d>=0?'good':'bad'}">${(d>=0?'+':'')}${money2(d)}</span>`; }
+
+function render(){
+  const stake=+$('stake').value||0;
+  const N=+$('trades').value;
+  const p=+$('price').value;
+  const w=(+$('win').value)/100;
+  const frac=(+$('frac').value)/100;
+  const V=stake*N;
+  const {yup,pm}=readFees();
+
+  $('tradesLbl').textContent=N;
+  $('volLbl').textContent=money(V);
+  $('priceLbl').textContent='$'+p.toFixed(2);
+  $('multLbl').textContent='×'+(1/p).toFixed(2);
+  $('winLbl').textContent=Math.round(w*100)+'%';
+  $('fracLbl').textContent=Math.round(frac*100)+'%';
+  $('stakeEcho').textContent=money(stake);
+  $('p0Echo').textContent=money(stake);
+  $('beLbl').textContent=pct(breakeven(p,yup));
+
+  // flat
+  const fy=flatPnl(V,p,w,yup), fp=flatPnl(V,p,w,pm);
+  $('tYupFlat').textContent=money2(fy.pnl); $('tYupFlatRoi').textContent='ROI '+pct(fy.roi);
+  $('tPmFlat').textContent=money2(fp.pnl); $('tPmFlatRoi').textContent='ROI '+pct(fp.roi);
+  $('tDiff').textContent=money2(fp.pnl-fy.pnl);
+
+  $('flatBody').innerHTML=[
+    ['Net P&L', money2(fy.pnl), money2(fp.pnl), diffCell(fp.pnl,fy.pnl)],
+    ['ROI on volume', pct(fy.roi), pct(fp.roi), '—'],
+    ['Return multiple / $1', fy.R.toFixed(4), fp.R.toFixed(4), '—'],
+  ].map(r=>`<tr><td>${r[0]}</td><td class="yup">${r[1]}</td><td class="pm">${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+
+  // compounding
+  const cy=compPnl(stake,N,p,w,yup,frac), cp=compPnl(stake,N,p,w,pm,frac);
+  $('compBody').innerHTML=[
+    ['Expected ending bankroll', money2(cy.bal), money2(cp.bal), diffCell(cp.bal,cy.bal)],
+    ['Expected net P&L', money2(cy.pnl), money2(cp.pnl), diffCell(cp.pnl,cy.pnl)],
+    ['Expected ROI', pct(cy.roi), pct(cp.roi), '—'],
+  ].map(r=>`<tr><td>${r[0]}</td><td class="yup">${r[1]}</td><td class="pm">${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+
+  // scenario table
+  const rows=[1,5,10,20,50,100];
+  $('scnBody').innerHTML=rows.map(n=>{
+    const v=stake*n;
+    const a=flatPnl(v,p,w,yup), b=flatPnl(v,p,w,pm);
+    const c=compPnl(stake,n,p,w,yup,frac), d=compPnl(stake,n,p,w,pm,frac);
+    const cur=n===N?' style="background:rgba(88,166,255,.10)"':'';
+    return `<tr${cur}><td>${n}</td><td>${money(v)}</td>
+      <td class="yup">${money2(a.pnl)}</td><td class="pm">${money2(b.pnl)}</td>
+      <td class="yup">${money(c.pnl)}</td><td class="pm">${money(d.pnl)}</td></tr>`;
+  }).join('');
+
+  $('engineFoot').innerHTML=`Engine: expected net return per $1 staked = win_rate × [payout_multiple − profit_fee×(payout_multiple−1)], payout_multiple = (1−taker)/(price×(1+slippage)). Yupnup R=${fy.R.toFixed(4)}, Polymarket R=${fp.R.toFixed(4)} per $1 at these settings. Compounding uses g=(1−frac)+frac×R per trade over N trades. Estimates for comparison, not financial advice.`;
+}
+
+$('pmCat').addEventListener('change',e=>{$('pTaker').value=e.target.value; render();});
+['stake','trades','price','win','frac','yTaker','ySlip','yLag','yPf','yWd','pTaker','pSlip'].forEach(id=>$(id).addEventListener('input',render));
+render();
+</script>
+</body>
+</html>
